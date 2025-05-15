@@ -1,30 +1,24 @@
-// src/components/Productos.tsx
 import { useState, useEffect } from 'react';
-import { Producto } from '../../hook/useProductos';
 
-interface Productos {
-  id_productos: number;
-  id_categoria: number;
-  nombre_producto: string;
-  descripcion: string;
-  precio: number;
-  disponible: string;
+interface Entrega {
+  id_entrega: number;
+  direccion: string;
+  fecha_entrega: string;
 }
 
-interface ProductosProps {
-  productos: Producto[];
+interface EntregasProps {
+  entregas: Entrega[];
   loading: boolean;
   error: string | null;
 }
 
-export default function Productos({ productos, loading, error }: ProductosProps) {
+export default function Entregas({ entregas, loading, error }: EntregasProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filtered = productos.filter(p =>
-    p.nombre_producto.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-    p.descripcion.toLowerCase().includes(searchTerm.trim().toLowerCase())
+  const filtered = entregas.filter(e =>
+    e.direccion.toLowerCase().includes(searchTerm.trim().toLowerCase())
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
@@ -35,16 +29,16 @@ export default function Productos({ productos, loading, error }: ProductosProps)
     setCurrentPage(1);
   }, [searchTerm, itemsPerPage]);
 
-  if (loading) return <p className="p-6 text-center">Cargando productos...</p>;
+  if (loading) return <p className="p-6 text-center">Cargando entregas...</p>;
   if (error) return <p className="p-6 text-center text-red-500">Error: {error}</p>;
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Lista de Productos</h2>
+      <h2 className="text-xl font-bold mb-4">Lista de Entregas</h2>
 
       <input
         type="text"
-        placeholder="Buscar por nombre o descripción..."
+        placeholder="Buscar por dirección..."
         value={searchTerm}
         onChange={e => setSearchTerm(e.target.value)}
         className="mb-4 p-2 border rounded w-full"
@@ -53,21 +47,17 @@ export default function Productos({ productos, loading, error }: ProductosProps)
       <table className="w-full border-collapse border">
         <thead className="bg-gray-100">
           <tr>
-            <th className="border p-2">ID Producto</th>
-            <th className="border p-2">Nombre</th>
-            <th className="border p-2">Descripción</th>
-            <th className="border p-2">Precio</th>
-            <th className="border p-2">Disponible</th>
+            <th className="border p-2">ID</th>
+            <th className="border p-2">Dirección</th>
+            <th className="border p-2">Fecha de Entrega</th>
           </tr>
         </thead>
         <tbody>
-          {pageData.map(producto => (
-            <tr key={producto.id_producto}>
-              <td className="border p-2">{producto.id_producto}</td>
-              <td className="border p-2">{producto.nombre_producto}</td>
-              <td className="border p-2">{producto.descripcion}</td>
-              <td className="border p-2">{producto.precio}</td>
-              <td className="border p-2">{producto.disponible ? 'Sí' : 'No'}</td>
+          {pageData.map(entrega => (
+            <tr key={entrega.id_entrega}>
+              <td className="border p-2">{entrega.id_entrega}</td>
+              <td className="border p-2">{entrega.direccion}</td>
+              <td className="border p-2">{entrega.fecha_entrega}</td>
             </tr>
           ))}
         </tbody>

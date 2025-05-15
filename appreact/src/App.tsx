@@ -1,47 +1,37 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import 'bootstrap/dist/css/bootstrap.min.css';
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import React, { useState } from 'react';
+import Sidebar from './page/main/Sidebar';// Asegúrate de que la ruta sea la correcta
+import Facturas from './page/main/Facturas';// Ajusta según el nombre de tus componentes
+import Clientes from './page/main/Clientes';
+import Pedidos from './page/main/Pedidos';
+import Productos from './page/main/Productos';
+import Repartidores from './page/main/Repartidores';
+import Categorias from './page/main/Categorias';
+import { useFacturas } from './hook/useFacturas';// Si es necesario usar hook para obtener las facturas
 
-import './index.css';  // O './App.css' si es el archivo donde importas Tailwind
+const App: React.FC = () => {
+  // Estado para manejar la vista activa
+  const [view, setView] = useState<'dashboard' | 'clientes' | 'pedidos' | 'productos' | 'facturas' | 'repartidores' | 'entregas' | 'categorias'>('dashboard');
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
-
-
-function App() {
-  const [count, setCount] = useState(0)
+  // Puedes traer las facturas u otros datos necesarios
+  const { facturas, loading, error } = useFacturas(); // Solo si estás usando un hook para obtener facturas
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="d-flex">
+      {/* Sidebar */}
+      <Sidebar setView={setView} />
+      
+      {/* Contenido principal */}
+      <div className="flex-grow-1 p-4">
+        {view === 'facturas' && <Facturas facturas={facturas} loading={loading} error={error} />}
+        {view === 'clientes' && <Clientes clientes={[]} loading={false} error={null} />}
+        {view === 'pedidos' && <Pedidos pedidos={[]} loading={false} error={null} />}
+        {view === 'productos' && <Productos productos={[]} loading={false} error={null} />}
+        {view === 'repartidores' && <Repartidores repartidores={[]} loading={false} error={null} />}
+        {view === 'categorias' && <Categorias categorias={[]} loading={false} error={null} />}
+        {/* Agrega aquí más vistas según sea necesario */}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    </div>
+  );
+};
 
-export default App
+export default App;
