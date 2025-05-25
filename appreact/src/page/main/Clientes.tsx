@@ -56,7 +56,6 @@ export function Clientes() {
         method: "DELETE",
       });
 
-      // Actualizar la lista sin necesidad de hacer un nuevo fetch si deseas
       setClientes((prev) =>
         prev.filter((c) => c.id_cliente !== cliente.id_cliente)
       );

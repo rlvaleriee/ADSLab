@@ -22,10 +22,10 @@ export function Telefonos() {
   const obtenerTelefonos = async () => {
   try {
     const data = await fetchClient<Telefono[]>("/api/telefonos");
-    setTelefonos(data); // ✅ asegura que sea array
+    setTelefonos(data); 
   } catch (error) {
     console.error("Error al obtener teléfonos:", error);
-    setTelefonos([]); // fallback seguro
+    setTelefonos([]); 
   }
 };
 

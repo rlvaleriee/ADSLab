@@ -56,7 +56,6 @@ export function RepartidorModal({
 
   let parsedValue: any = value;
 
-  // Si es campo booleano simulado (como string), asegúrate de mantener tipo string
   if (name === "activo" && (value === "true" || value === "false")) {
     parsedValue = value;
   }

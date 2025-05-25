@@ -103,7 +103,6 @@ export default function Dashboard() {
   );
 }
 
-// Subcomponente: Tarjeta de resumen
 function DashboardCard({ icon, title, count }: { icon: JSX.Element, title: string, count: number }) {
   return (
     <div className="col-md-4">
@@ -120,7 +119,6 @@ function DashboardCard({ icon, title, count }: { icon: JSX.Element, title: strin
   );
 }
 
-// Subcomponente: Lista de elementos recientes
 function RecentList({
   title,
   items,

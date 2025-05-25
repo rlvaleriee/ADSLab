@@ -53,27 +53,23 @@ export function DataTable<T extends Record<string, any>>({
     setCurrentPage(1);
   }, [searchTerm, itemsPerPage]);
 
-  // Función para abrir el modal de edición
   const openEditModal = (item: T) => {
     setSelectedItem(item);
     setModalType("edit");
     setModalOpen(true);
   };
 
-  // Función para abrir el modal de eliminación
   const openDeleteModal = (item: T) => {
     setSelectedItem(item);
     setModalType("delete");
     setModalOpen(true);
   };
 
-  // Función para abrir el modal de nuevo item
   const openNewModal = () => {
     setModalType("new");
     setModalOpen(true);
   };
 
-  // Cerrar el modal
   const closeModal = () => {
     setModalOpen(false);
     setSelectedItem(null);
@@ -98,7 +94,7 @@ export function DataTable<T extends Record<string, any>>({
               <Button
                 color="success"
                 className="btn-sm"
-                onClick={openNewModal} // Abre el modal para nuevo
+                onClick={openNewModal} 
               >
                 <i className="bi bi-plus-circle me-2" />
                 Nuevo
@@ -107,7 +103,7 @@ export function DataTable<T extends Record<string, any>>({
           </div>
         </div>
 
-        {/* Aquí se coloca la barra de desplazamiento solo si el contenido excede el alto */}
+        {/* barra de desplazamiento */}
         <div
           className="table-responsive"
           style={{

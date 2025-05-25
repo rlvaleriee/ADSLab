@@ -21,30 +21,15 @@ export default function Login() {
 
           {/* Botón de login con Google */}
           <GoogleLogin
-            onSuccess={(res) => {
-              if (res.credential) {
-                login(res.credential);
-                navigate("/"); // Redirigir al home después de iniciar sesión
-              }
-            }}
-            onError={() => alert("Fallo al iniciar sesión")}
-            useOneTap // Opción para habilitar OneTap
-            render={(renderProps) => (
-              <button
-                onClick={renderProps.onClick}
-                disabled={renderProps.disabled}
-                className="btn btn-danger w-100 d-flex justify-content-center align-items-center py-2 mt-4"
-              >
-                <img
-                  src="https://developers.google.com/identity/images/g-logo.png"
-                  alt="Google Logo"
-                  width="20"
-                  className="me-3"
-                />
-                Iniciar sesión con Google
-              </button>
-            )}
-          />
+  onSuccess={(res) => {
+    if (res.credential) {
+      login(res.credential);
+      navigate("/");
+    }
+  }}
+  onError={() => alert("Fallo al iniciar sesión")}
+  useOneTap
+/>
         </div>
       </div>
     </div>

@@ -64,9 +64,16 @@ export function ClienteModal({
         : "/api/clientes/add";
 
       const response = await fetchClient(endpoint, {
-        method,
-        body: JSON.stringify(formData),
-      });
+  method,
+  body: JSON.stringify(formData),
+});
+
+// Ejemplo de validación (solo si tu fetchClient devuelve algo útil)
+if (response && response.success === false) {
+  Swal.fire("Error", "La operación falló", "error");
+  return;
+}
+
 
       Swal.fire({
         title: cliente ? "Cliente actualizado" : "Cliente creado",

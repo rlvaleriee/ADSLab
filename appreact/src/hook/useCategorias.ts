@@ -1,4 +1,3 @@
-// src/hooks/useCategorias.ts
 import { useState, useEffect } from 'react';
 import { fetchClient } from '../services/fetchClient';
 

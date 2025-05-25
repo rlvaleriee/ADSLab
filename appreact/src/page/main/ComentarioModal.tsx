@@ -80,9 +80,15 @@ export function ComentarioModal({
         : "/api/comentarios/add";
 
       const response = await fetchClient(endpoint, {
-        method,
-        body: JSON.stringify(formData),
-      });
+  method,
+  body: JSON.stringify(formData),
+});
+
+// Ejemplo de validación (solo si tu fetchClient devuelve algo útil)
+if (response && response.success === false) {
+  Swal.fire("Error", "La operación falló", "error");
+  return;
+}
 
       Swal.fire({
         title: comentario ? "Comentario actualizado" : "Comentario creado",
