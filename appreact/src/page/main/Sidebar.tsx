@@ -1,62 +1,123 @@
 import React from 'react';
-import { FaBox, FaTruck, FaUser, FaFileInvoice, FaClipboardList, FaTag, FaShoppingBag } from 'react-icons/fa';
+import {
+  FaBox,
+  FaTruck,
+  FaUser,
+  FaFileInvoice,
+  FaClipboardList,
+  FaTag,
+  FaShoppingBag,
+  FaTachometerAlt,
+  FaComment,
+  FaPhoneAlt,
+  FaBell,
+  FaCog,
+} from 'react-icons/fa';
 
 interface SidebarProps {
-  setView: React.Dispatch<React.SetStateAction<'dashboard' | 'clientes' | 'pedidos' | 'productos' | 'facturas' | 'repartidores' | 'categorias' | 'entregas'>>;
+  setView: React.Dispatch<React.SetStateAction<'dashboard' | 'clientes' | 'pedidos' | 'productos' | 'facturas' | 'repartidores' | 'categorias' | 'entregas' | 'comentarios' | 'telefonos' | 'notificaciones' | 'estados'>>;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ setView }) => {
   return (
-    <div className="bg-light p-4" style={{ width: '250px' }}>
-      <h3 className="mb-4">Menú</h3>
-      <ul className="list-unstyled">
-        <li>
-          <button className="btn btn-link w-100 text-start" onClick={() => setView('dashboard')}>
+    <div className="bg-dark text-white vh-100 p-3" style={{ width: '190px' }}>
+      <h3 className="mb-4 text-nowrap overflow-hidden text-truncate">
+        🚛 Menu
+      </h3>
+      <ul className="nav flex-column">
+        {/* Sección de Dashboard */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('dashboard')}>
+            <FaTachometerAlt className="me-2" />
             Dashboard
           </button>
         </li>
-        <li>
-          <button className="btn btn-link w-100 text-start" onClick={() => setView('clientes')}>
+
+        {/* Sección de Clientes */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('clientes')}>
             <FaUser className="me-2" />
             Clientes
           </button>
         </li>
-        <li>
-          <button className="btn btn-link w-100 text-start" onClick={() => setView('pedidos')}>
+
+        {/* Sección de Pedidos */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('pedidos')}>
             <FaClipboardList className="me-2" />
             Pedidos
           </button>
         </li>
-        <li>
-          <button className="btn btn-link w-100 text-start" onClick={() => setView('productos')}>
+
+        {/* Sección de Productos */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('productos')}>
             <FaBox className="me-2" />
             Productos
           </button>
         </li>
-        <li>
-          <button className="btn btn-link w-100 text-start" onClick={() => setView('facturas')}>
+
+        {/* Sección de Facturas */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('facturas')}>
             <FaFileInvoice className="me-2" />
             Facturas
           </button>
         </li>
-        <li>
-          <button className="btn btn-link w-100 text-start" onClick={() => setView('repartidores')}>
+
+        {/* Sección de Repartidores */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('repartidores')}>
             <FaTruck className="me-2" />
             Repartidores
           </button>
         </li>
-        {/* Nueva opción para Categorías */}
-        <li>
-          <button className="btn btn-link w-100 text-start" onClick={() => setView('categorias')}>
+
+        {/* Sección de Categorías */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('categorias')}>
             <FaTag className="me-2" />
             Categorías
           </button>
         </li>
-        {/* Nueva opción para Entregas */}
-        <li>
-          <button className="btn btn-link w-100 text-start" onClick={() => setView('entregas')}>
+
+        {/* Sección de Entregas */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('entregas')}>
             <FaShoppingBag className="me-2" />
             Entregas
+          </button>
+        </li>
+
+        {/* Nueva sección para Comentarios */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('comentarios')}>
+            <FaComment className="me-2" />
+            Comentarios
+          </button>
+        </li>
+
+        {/* Nueva sección para Teléfonos */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('telefonos')}>
+            <FaPhoneAlt className="me-2" />
+            Teléfonos
+          </button>
+        </li>
+
+        {/* Nueva sección para Notificaciones */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('notificaciones')}>
+            <FaBell className="me-2" />
+            Notificaciones
+          </button>
+        </li>
+
+        {/* Nueva sección para Estados */}
+        <li className="nav-item mb-2">
+          <button className="btn btn-link nav-link text-white text-start" onClick={() => setView('estados')}>
+            <FaCog className="me-2" />
+            Estados
           </button>
         </li>
       </ul>

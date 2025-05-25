@@ -1,102 +1,144 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { fetchClient } from "../../services/fetchClient";
+import { Entrega } from "../../interfaces/IEntregas";
+import { Pedido } from "../../interfaces/IPedidos";
+import { Button } from "reactstrap";
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { DataTable } from "./DataTable";
+import { EntregaModal } from "./EntregaModal";
+import Swal from "sweetalert2";
 
-interface Entrega {
-  id_entrega: number;
-  direccion: string;
-  fecha_entrega: string;
-}
+export function Entregas() {
+  const [entregas, setEntregas] = useState<Entrega[]>([]);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [entregaSeleccionada, setEntregaSeleccionada] = useState<Entrega | undefined>(undefined);
 
-interface EntregasProps {
-  entregas: Entrega[];
-  loading: boolean;
-  error: string | null;
-}
+  const toggleModal = () => {
+    setModalOpen(!modalOpen);
+    if (modalOpen) setEntregaSeleccionada(undefined);
+  };
 
-export default function Entregas({ entregas, loading, error }: EntregasProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const obtenerEntregas = async () => {
+    try {
+      const data = await fetchClient<Entrega[]>("/api/entregas");
+      setEntregas(data);
+    } catch (error) {
+      console.error("Error al obtener entregas:", error);
+    }
+  };
 
-  const filtered = entregas.filter(e =>
-    e.direccion.toLowerCase().includes(searchTerm.trim().toLowerCase())
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const pageData = filtered.slice(startIdx, startIdx + itemsPerPage);
+  const obtenerPedidos = async () => {
+    try {
+      const data = await fetchClient<Pedido[]>("/api/pedidos");
+      setPedidos(data);
+    } catch (error) {
+      console.error("Error al obtener pedidos:", error);
+    }
+  };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+    obtenerEntregas();
+    obtenerPedidos();
+  }, []);
 
-  if (loading) return <p className="p-6 text-center">Cargando entregas...</p>;
-  if (error) return <p className="p-6 text-center text-red-500">Error: {error}</p>;
+  const handleNuevo = () => {
+    setEntregaSeleccionada(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEditar = (entrega: Entrega) => {
+    setEntregaSeleccionada(entrega);
+    setModalOpen(true);
+  };
+
+  const handleEliminar = async (entrega: Entrega) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: `¿Deseas eliminar la entrega del pedido #${entrega.id_pedido}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await fetchClient(`/api/entregas/delete/${entrega.id_entrega}`, {
+          method: "DELETE",
+        });
+
+        setEntregas((prev) =>
+          prev.filter((e) => e.id_entrega !== entrega.id_entrega)
+        );
+
+        Swal.fire("Eliminado", "La entrega fue eliminada correctamente", "success");
+      } catch (error: any) {
+        Swal.fire("Error", error.message || "No se pudo eliminar la entrega", "error");
+      }
+    }
+  };
+
+  const getDireccionPedido = (idPedido: number) => {
+    return pedidos.find(p => p.id_pedido === idPedido)?.direccion ?? "Dirección no encontrada";
+  };
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Lista de Entregas</h2>
+    <div>
+      <h2 className="mt-4">Lista de Entregas</h2>
 
-      <input
-        type="text"
-        placeholder="Buscar por dirección..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        className="mb-4 p-2 border rounded w-full"
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button color="primary" onClick={handleNuevo}>
+          Nueva Entrega
+        </Button>
+      </div>
+
+      <DataTable<Entrega>
+        data={entregas}
+        columns={[
+  {
+    key: "id_pedido",
+    label: "Dirección del Pedido",
+    render: (entrega) => getDireccionPedido(entrega.id_pedido), // ✅
+  },
+  {
+    key: "fecha_entrega",
+    label: "Fecha de Entrega",
+  },
+  {
+    key: "acciones",
+    label: "Acciones",
+    render: (entrega: Entrega) => (
+      <div className="d-flex justify-content-center gap-2">
+        <Button
+          color="primary"
+          size="sm"
+          onClick={() => handleEditar(entrega)}
+        >
+          <FaEdit />
+        </Button>
+        <Button
+          color="danger"
+          size="sm"
+          onClick={() => handleEliminar(entrega)}
+        >
+          <FaTrashAlt />
+        </Button>
+      </div>
+    ),
+  },
+]}
+
+        searchKeys={["fecha_entrega"]}
       />
 
-      <table className="w-full border-collapse border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border p-2">ID</th>
-            <th className="border p-2">Dirección</th>
-            <th className="border p-2">Fecha de Entrega</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageData.map(entrega => (
-            <tr key={entrega.id_entrega}>
-              <td className="border p-2">{entrega.id_entrega}</td>
-              <td className="border p-2">{entrega.direccion}</td>
-              <td className="border p-2">{entrega.fecha_entrega}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
-        <div>
-          <label className="mr-2">Items por página:</label>
-          <select
-            value={itemsPerPage}
-            onChange={e => setItemsPerPage(Number(e.target.value))}
-            className="p-1 border rounded"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span>
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
+      <EntregaModal
+        isOpen={modalOpen}
+        toggle={toggleModal}
+        entrega={entregaSeleccionada}
+        pedidos={pedidos}
+        onSuccess={obtenerEntregas}
+      />
     </div>
   );
 }

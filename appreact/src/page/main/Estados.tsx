@@ -1,49 +1,49 @@
 import { useState, useEffect } from "react";
 import { fetchClient } from "../../services/fetchClient";
-import { Categoria } from "../../interfaces/ICategorias";
+import { Estado } from "../../interfaces/IEstados";
 import { Button } from "reactstrap";
 import { FaEdit, FaTrashAlt } from "react-icons/fa";
 import { DataTable } from "./DataTable";
-import { CategoriaModal } from "./CategoriaModal";
+import { EstadoModal } from "./EstadoModal";
 import Swal from "sweetalert2";
 
-export function Categorias() {
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+export function Estados() {
+  const [estados, setEstados] = useState<Estado[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<Categoria | undefined>(undefined);
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState<Estado | undefined>(undefined);
 
   const toggleModal = () => {
     setModalOpen(!modalOpen);
-    if (modalOpen) setCategoriaSeleccionada(undefined);
+    if (modalOpen) setEstadoSeleccionado(undefined);
   };
 
-  const obtenerCategorias = async () => {
+  const obtenerEstados = async () => {
     try {
-      const data = await fetchClient<Categoria[]>("/api/categorias");
-      setCategorias(data);
+      const data = await fetchClient<Estado[]>("/api/estados");
+      setEstados(data);
     } catch (error) {
-      console.error("Error al obtener categorías:", error);
+      console.error("Error al obtener estados:", error);
     }
   };
 
   useEffect(() => {
-    obtenerCategorias();
+    obtenerEstados();
   }, []);
 
   const handleNuevo = () => {
-    setCategoriaSeleccionada(undefined);
+    setEstadoSeleccionado(undefined);
     setModalOpen(true);
   };
 
-  const handleEditar = (categoria: Categoria) => {
-    setCategoriaSeleccionada(categoria);
+  const handleEditar = (estado: Estado) => {
+    setEstadoSeleccionado(estado);
     setModalOpen(true);
   };
 
-  const handleEliminar = async (categoria: Categoria) => {
+  const handleEliminar = async (estado: Estado) => {
     const result = await Swal.fire({
       title: "¿Estás seguro?",
-      text: `¿Deseas eliminar la categoría "${categoria.nombre_categoria}"?`,
+      text: `¿Deseas eliminar el estado "${estado.nombre_estado}"?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Sí, eliminar",
@@ -52,52 +52,52 @@ export function Categorias() {
 
     if (result.isConfirmed) {
       try {
-        await fetchClient(`/api/categorias/delete/${categoria.id_categoria}`, {
+        await fetchClient(`/api/estados/delete/${estado.id_estado}`, {
           method: "DELETE",
         });
 
-        setCategorias((prev) =>
-          prev.filter((c) => c.id_categoria !== categoria.id_categoria)
+        setEstados((prev) =>
+          prev.filter((e) => e.id_estado !== estado.id_estado)
         );
 
-        Swal.fire("Eliminado", "La categoría fue eliminada correctamente", "success");
+        Swal.fire("Eliminado", "El estado fue eliminado correctamente", "success");
       } catch (error: any) {
-        Swal.fire("Error", error.message || "No se pudo eliminar la categoría", "error");
+        Swal.fire("Error", error.message || "No se pudo eliminar el estado", "error");
       }
     }
   };
 
   return (
     <div>
-      <h2 className="mt-4">Lista de Categorías</h2>
+      <h2 className="mt-4">Lista de Estados</h2>
 
       <div className="d-flex justify-content-between align-items-center mb-3">
         <Button color="primary" onClick={handleNuevo}>
-          Nueva Categoría
+          Nuevo Estado
         </Button>
       </div>
 
-      <DataTable<Categoria>
-        data={categorias}
+      <DataTable<Estado>
+        data={estados}
         columns={[
-          { key: "nombre_categoria", label: "Nombre de la Categoría" },
+          { key: "nombre_estado", label: "Nombre Estado" },
           { key: "descripcion", label: "Descripción" },
           {
             key: "acciones",
             label: "Acciones",
-            render: (categoria: Categoria) => (
+            render: (estado: Estado) => (
               <div className="d-flex justify-content-center gap-2">
                 <Button
                   color="primary"
                   size="sm"
-                  onClick={() => handleEditar(categoria)}
+                  onClick={() => handleEditar(estado)}
                 >
                   <FaEdit />
                 </Button>
                 <Button
                   color="danger"
                   size="sm"
-                  onClick={() => handleEliminar(categoria)}
+                  onClick={() => handleEliminar(estado)}
                 >
                   <FaTrashAlt />
                 </Button>
@@ -105,14 +105,14 @@ export function Categorias() {
             ),
           },
         ]}
-        searchKeys={["nombre_categoria", "descripcion"]}
+        searchKeys={["nombre_estado", "descripcion"]}
       />
 
-      <CategoriaModal
+      <EstadoModal
         isOpen={modalOpen}
         toggle={toggleModal}
-        categoria={categoriaSeleccionada}
-        onSuccess={obtenerCategorias}
+        estado={estadoSeleccionado}
+        onSuccess={obtenerEstados}
       />
     </div>
   );

@@ -2,23 +2,14 @@
 import { useState, useEffect } from 'react';
 import { fetchClient } from '../services/fetchClient';
 
-export interface Producto {
-  id_producto: number;
-  id_categoria: number;
-  nombre_producto: string;
-  descripcion: string;
-  precio: number;
-  disponible: boolean;
-}
-
 export function useProductos() {
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const [productos, setProductos] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    fetchClient<Producto[]>('/api/productos', { method: 'GET' })
+    fetchClient<any[]>('/api/productos', { method: 'GET' })
       .then(data => setProductos(data))
       .catch(err => setError(err.message || 'Error al cargar productos'))
       .finally(() => setLoading(false));

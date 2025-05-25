@@ -1,103 +1,129 @@
-// src/components/Repartidores.tsx
-import { useState, useEffect } from 'react';
-import { Repartidor } from '../../hook/useRepartidores'; 
+import { useState, useEffect } from "react";
+import { fetchClient } from "../../services/fetchClient";
+import { Repartidor } from "../../interfaces/IRepartidores";
+import { Button } from "reactstrap";
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { DataTable } from "./DataTable";
+import { RepartidorModal } from "./RepartidorModal";
+import Swal from "sweetalert2";
 
-interface RepartidoresProps {
-  repartidores: Repartidor[];
-  loading: boolean;
-  error: string | null;
-}
+export function Repartidores() {
+  const [repartidores, setRepartidores] = useState<Repartidor[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [repartidorSeleccionado, setRepartidorSeleccionado] = useState<Repartidor | undefined>(undefined);
 
-export default function Repartidores({ repartidores, loading, error }: RepartidoresProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const toggleModal = () => {
+    setModalOpen(!modalOpen);
+    if (modalOpen) setRepartidorSeleccionado(undefined);
+  };
 
-  const filtered = repartidores.filter(r =>
-    r.nombre_repartidor.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-    r.dui.toLowerCase().includes(searchTerm.trim().toLowerCase())
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const pageData = filtered.slice(startIdx, startIdx + itemsPerPage);
+  const obtenerRepartidores = async () => {
+    try {
+      const data = await fetchClient<Repartidor[]>("/api/repartidores");
+      setRepartidores(data);
+    } catch (error) {
+      console.error("Error al obtener repartidores:", error);
+    }
+  };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+    obtenerRepartidores();
+  }, []);
 
-  if (loading) return <p className="p-6 text-center">Cargando repartidores...</p>;
-  if (error) return <p className="p-6 text-center text-red-500">Error: {error}</p>;
+  const handleNuevo = () => {
+    setRepartidorSeleccionado(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEditar = (repartidor: Repartidor) => {
+    setRepartidorSeleccionado(repartidor);
+    setModalOpen(true);
+  };
+
+  const handleEliminar = async (repartidor: Repartidor) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: `¿Deseas eliminar a "${repartidor.nombre_repartidor}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await fetchClient(`/api/repartidores/delete/${repartidor.id_repartidor}`, {
+          method: "DELETE",
+        });
+
+        setRepartidores((prev) =>
+          prev.filter((r) => r.id_repartidor !== repartidor.id_repartidor)
+        );
+
+        Swal.fire("Eliminado", "El repartidor fue eliminado correctamente", "success");
+      } catch (error: any) {
+        Swal.fire("Error", error.message || "No se pudo eliminar", "error");
+      }
+    }
+  };
+
+  const renderActivo = (activo: string) => {
+    return activo === "true" ? "Sí" : "No";
+  };
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Lista de Repartidores</h2>
+    <div>
+      <h2 className="mt-4">Lista de Repartidores</h2>
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre o DUI..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        className="mb-4 p-2 border rounded w-full"
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button color="primary" onClick={handleNuevo}>
+          Nuevo Repartidor
+        </Button>
+      </div>
+
+      <DataTable<Repartidor>
+        data={repartidores}
+        columns={[
+          { key: "nombre_repartidor", label: "Nombre Repartidor" },
+          { key: "telefono", label: "Teléfono" },
+          { key: "dui", label: "DUI" },
+          {
+            key: "activo",
+            label: "Activo",
+            render: (item) => renderActivo(item.activo),
+          },
+          {
+            key: "acciones",
+            label: "Acciones",
+            render: (repartidor: Repartidor) => (
+              <div className="d-flex justify-content-center gap-2">
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => handleEditar(repartidor)}
+                >
+                  <FaEdit />
+                </Button>
+                <Button
+                  color="danger"
+                  size="sm"
+                  onClick={() => handleEliminar(repartidor)}
+                >
+                  <FaTrashAlt />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        searchKeys={["nombre_repartidor", "telefono", "dui"]}
       />
 
-      <table className="w-full border-collapse border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border p-2">ID Repartidor</th>
-            <th className="border p-2">Nombre</th>
-            <th className="border p-2">Teléfono</th>
-            <th className="border p-2">DUI</th>
-            <th className="border p-2">Activo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageData.map(repartidor => (
-            <tr key={repartidor.id_repartidor}>
-              <td className="border p-2">{repartidor.id_repartidor}</td>
-              <td className="border p-2">{repartidor.nombre_repartidor}</td>
-              <td className="border p-2">{repartidor.telefono}</td>
-              <td className="border p-2">{repartidor.dui}</td>
-              <td className="border p-2">{repartidor.activo ? 'Sí' : 'No'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
-        <div>
-          <label className="mr-2">Items por página:</label>
-          <select
-            value={itemsPerPage}
-            onChange={e => setItemsPerPage(Number(e.target.value))}
-            className="p-1 border rounded"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span>
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
+      <RepartidorModal
+        isOpen={modalOpen}
+        toggle={toggleModal}
+        repartidor={repartidorSeleccionado}
+        onSuccess={obtenerRepartidores}
+      />
     </div>
   );
 }

@@ -1,36 +1,40 @@
-// src/services/fetchClient.ts
 const BASE_URL = import.meta.env.VITE_API_URL;
-console.log('BASE_URL', BASE_URL);  // 👈🏼 Debería mostrar: http://localhost:5000
 
-export async function fetchClient<T>(
+console.log("BASE_URL", BASE_URL); // e.g., http://localhost:5000
+
+export async function fetchClient<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
-      // -------- OPCIONES POR DEFECTO ----------
-      method: 'GET',
-      credentials: 'include',              // ← envía cookies/credenciales (útil si usas JWT-cookie)
-      cache: 'no-store',
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
       ...options,
     });
 
-    // ---------- MANEJO DE ERRORES ------------
     if (!response.ok) {
-      const text = await response.text();           // mensaje del backend
+      const errorText = await response.text();
       throw new Error(
-        `Error ${response.status}: ${response.statusText}\n${text}`
+        `Error ${response.status}: ${response.statusText}\n${errorText}`
       );
     }
 
-    // ---------- PARSE JSON -------------------
-    return (await response.json()) as T;
+    // Manejar 204 No Content (sin cuerpo)
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    // Intenta parsear el JSON
+    const data = (await response.json()) as T;
+    return data;
   } catch (err) {
-    // Puedes loguear o reenviar a un servicio de errores aquí
+    // Si lo deseas, podrías reportar a un sistema externo aquí
     throw err;
   }
 }

@@ -1,112 +1,183 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { fetchClient } from "../../services/fetchClient";
+import { Pedido } from "../../interfaces/IPedidos";
+import { Cliente } from "../../interfaces/ICliente";
+import { Estado } from "../../interfaces/IEstados";
+import { Repartidor } from "../../interfaces/IRepartidores";
+import { Button } from "reactstrap";
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { DataTable } from "./DataTable";
+import { PedidoModal } from "./PedidoModal";
+import Swal from "sweetalert2";
 
-interface Pedido {
-  id_pedido: number;
-  id_cliente: number;
-  fecha_pedido: string;
-  id_estado: number;
-  id_repartidor: number;
-  direccion: string;
-}
+export function Pedidos() {
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [estados, setEstados] = useState<Estado[]>([]);
+  const [repartidores, setRepartidores] = useState<Repartidor[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [pedidoSeleccionado, setPedidoSeleccionado] = useState<Pedido | undefined>(undefined);
 
-interface PedidosProps {
-  pedidos: Pedido[];
-  loading: boolean;
-  error: string | null;
-}
+  const toggleModal = () => {
+    setModalOpen(!modalOpen);
+    if (modalOpen) setPedidoSeleccionado(undefined);
+  };
 
-export default function Pedidos({ pedidos, loading, error }: PedidosProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const obtenerPedidos = async () => {
+    try {
+      const data = await fetchClient<Pedido[]>("/api/pedidos");
+      setPedidos(data);
+    } catch (error) {
+      console.error("Error al obtener pedidos:", error);
+    }
+  };
 
-  const filtered = pedidos.filter(p =>
-    p.direccion.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-    p.id_pedido.toString().includes(searchTerm.trim())
-  );
+  const obtenerClientes = async () => {
+    try {
+      const data = await fetchClient<Cliente[]>("/api/clientes");
+      setClientes(data);
+    } catch (error) {
+      console.error("Error al obtener clientes:", error);
+    }
+  };
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const pageData = filtered.slice(startIdx, startIdx + itemsPerPage);
+  const obtenerEstados = async () => {
+    try {
+      const data = await fetchClient<Estado[]>("/api/estados");
+      setEstados(data);
+    } catch (error) {
+      console.error("Error al obtener estados:", error);
+    }
+  };
+
+  const obtenerRepartidores = async () => {
+    try {
+      const data = await fetchClient<Repartidor[]>("/api/repartidores");
+      setRepartidores(data);
+    } catch (error) {
+      console.error("Error al obtener repartidores:", error);
+    }
+  };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+    obtenerPedidos();
+    obtenerClientes();
+    obtenerEstados();
+    obtenerRepartidores();
+  }, []);
 
-  if (loading) return <p className="p-6 text-center">Cargando pedidos...</p>;
-  if (error) return <p className="p-6 text-center text-red-500">Error: {error}</p>;
+  const handleNuevo = () => {
+    setPedidoSeleccionado(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEditar = (pedido: Pedido) => {
+    setPedidoSeleccionado(pedido);
+    setModalOpen(true);
+  };
+
+  const handleEliminar = async (pedido: Pedido) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: `¿Deseas eliminar el pedido #${pedido.id_pedido}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await fetchClient(`/api/pedidos/delete/${pedido.id_pedido}`, {
+          method: "DELETE",
+        });
+
+        setPedidos((prev) =>
+          prev.filter((p) => p.id_pedido !== pedido.id_pedido)
+        );
+
+        Swal.fire("Eliminado", "El pedido fue eliminado correctamente", "success");
+      } catch (error: any) {
+        Swal.fire("Error", error.message || "No se pudo eliminar el pedido", "error");
+      }
+    }
+  };
+
+  const getClienteNombre = (id: number) =>
+    clientes.find(c => c.id_cliente === id)?.nombre_cliente ?? "Cliente no encontrado";
+
+  const getEstadoNombre = (id: number) =>
+    estados.find(e => e.id_estado === id)?.nombre_estado ?? "Estado no encontrado";
+
+  const getRepartidorNombre = (id: number) =>
+    repartidores.find(r => r.id_repartidor === id)?.nombre_repartidor ?? "Repartidor no encontrado";
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Lista de Pedidos</h2>
+    <div>
+      <h2 className="mt-4">Lista de Pedidos</h2>
 
-      <input
-        type="text"
-        placeholder="Buscar por ID o dirección..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        className="mb-4 p-2 border rounded w-full"
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button color="primary" onClick={handleNuevo}>
+          Nuevo Pedido
+        </Button>
+      </div>
+
+      <DataTable<Pedido>
+        data={pedidos}
+        columns={[
+          { key: "id_pedido", label: "ID Pedido" },
+          {
+            key: "id_cliente",
+            label: "Cliente",
+            render: (item) => getClienteNombre(item.id_cliente),
+          },
+          { key: "fecha_pedido", label: "Fecha de Pedido" },
+          {
+            key: "id_estado",
+            label: "Estado",
+            render: (item) => getEstadoNombre(item.id_estado),
+          },
+          {
+            key: "id_repartidor",
+            label: "Repartidor",
+            render: (item) => getRepartidorNombre(item.id_repartidor),
+          },
+          { key: "direccion", label: "Dirección" },
+          {
+            key: "acciones",
+            label: "Acciones",
+            render: (pedido: Pedido) => (
+              <div className="d-flex justify-content-center gap-2">
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => handleEditar(pedido)}
+                >
+                  <FaEdit />
+                </Button>
+                <Button
+                  color="danger"
+                  size="sm"
+                  onClick={() => handleEliminar(pedido)}
+                >
+                  <FaTrashAlt />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        searchKeys={["id_pedido", "id_cliente", "id_estado", "id_repartidor"]}
       />
 
-      <table className="w-full border-collapse border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border p-2">ID Pedido</th>
-            <th className="border p-2">ID Cliente</th>
-            <th className="border p-2">Fecha de Pedido</th>
-            <th className="border p-2">Estado</th>
-            <th className="border p-2">Repartidor</th>
-            <th className="border p-2">Dirección</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageData.map(pedido => (
-            <tr key={pedido.id_pedido}>
-              <td className="border p-2">{pedido.id_pedido}</td>
-              <td className="border p-2">{pedido.id_cliente}</td>
-              <td className="border p-2">{pedido.fecha_pedido}</td>
-              <td className="border p-2">{pedido.id_estado}</td>
-              <td className="border p-2">{pedido.id_repartidor}</td>
-              <td className="border p-2">{pedido.direccion}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
-        <div>
-          <label className="mr-2">Items por página:</label>
-          <select
-            value={itemsPerPage}
-            onChange={e => setItemsPerPage(Number(e.target.value))}
-            className="p-1 border rounded"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span>
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
+      <PedidoModal
+        isOpen={modalOpen}
+        toggle={toggleModal}
+        pedido={pedidoSeleccionado}
+        clientes={clientes}
+        estados={estados}
+        repartidores={repartidores}
+        onSuccess={obtenerPedidos}
+      />
     </div>
   );
 }

@@ -1,105 +1,122 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { fetchClient } from "../../services/fetchClient";
+import { Cliente } from "../../interfaces/ICliente";
+import { Button } from "reactstrap";
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { DataTable } from "./DataTable";
+import { ClienteModal } from "./ClienteModal";
+import Swal from "sweetalert2";
 
-interface Cliente {
-  id_cliente: number;
-  nombre_cliente: string;
-  telefono: string;
-  fecha_registro: string;
-}
+export function Clientes() {
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | undefined>(undefined);
 
-interface ClientesProps {
-  clientes: Cliente[];
-  loading: boolean;
-  error: string | null;
-}
+  const toggleModal = () => {
+    setModalOpen(!modalOpen);
+    if (modalOpen) setClienteSeleccionado(undefined);
+  };
 
-export default function Clientes({ clientes, loading, error }: ClientesProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const filtered = clientes.filter(c =>
-    c.nombre_cliente.toLowerCase().includes(searchTerm.trim().toLowerCase())
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const pageData = filtered.slice(startIdx, startIdx + itemsPerPage);
+  const obtenerClientes = async () => {
+    try {
+      const data = await fetchClient<Cliente[]>("/api/clientes");
+      setClientes(data);
+    } catch (error) {
+      console.error("Error al obtener clientes:", error);
+    }
+  };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+    obtenerClientes();
+  }, []);
 
-  if (loading) return <p className="p-6 text-center">Cargando clientes...</p>;
-  if (error) return <p className="p-6 text-center text-red-500">Error: {error}</p>;
+  const handleNuevo = () => {
+    setClienteSeleccionado(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEditar = (cliente: Cliente) => {
+    setClienteSeleccionado(cliente);
+    setModalOpen(true);
+  };
+
+  const handleEliminar = async (cliente: Cliente) => {
+  const result = await Swal.fire({
+    title: "¿Estás seguro?",
+    text: `¿Deseas eliminar al cliente "${cliente.nombre_cliente}"?`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await fetchClient(`/api/clientes/delete/${cliente.id_cliente}`, {
+        method: "DELETE",
+      });
+
+      // Actualizar la lista sin necesidad de hacer un nuevo fetch si deseas
+      setClientes((prev) =>
+        prev.filter((c) => c.id_cliente !== cliente.id_cliente)
+      );
+
+      Swal.fire("Eliminado", "El cliente fue eliminado correctamente", "success");
+    } catch (error: any) {
+      Swal.fire("Error", error.message || "No se pudo eliminar el cliente", "error");
+    }
+  }
+};
+
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Lista de Clientes</h2>
+    <div>
+      <h2 className="mt-4">Lista de Clientes</h2>
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        className="mb-4 p-2 border rounded w-full"
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button color="primary" onClick={handleNuevo}>
+          Nuevo Cliente
+        </Button>
+      </div>
+
+      <DataTable<Cliente>
+        data={clientes}
+        columns={[
+          { key: "nombre_cliente", label: "Nombre Cliente" },
+          { key: "telefono", label: "Teléfono" },
+          { key: "fecha_registro", label: "Fecha de Registro" },
+          {
+            key: "acciones",
+            label: "Acciones",
+            render: (cliente: Cliente) => (
+              <div className="d-flex justify-content-center gap-2">
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => handleEditar(cliente)}
+                >
+                  <FaEdit />
+                </Button>
+                <Button
+                  color="danger"
+                  size="sm"
+                  onClick={() => handleEliminar(cliente)}
+                >
+                  <FaTrashAlt />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        searchKeys={["nombre_cliente", "telefono"]}
       />
 
-      <table className="w-full border-collapse border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border p-2">ID</th>
-            <th className="border p-2">Nombre</th>
-            <th className="border p-2">Teléfono</th>
-            <th className="border p-2">Fecha de Registro</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageData.map(cliente => (
-            <tr key={cliente.id_cliente}>
-              <td className="border p-2">{cliente.id_cliente}</td>
-              <td className="border p-2">{cliente.nombre_cliente}</td>
-              <td className="border p-2">{cliente.telefono}</td>
-              <td className="border p-2">{cliente.fecha_registro}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
-        <div>
-          <label className="mr-2">Items por página:</label>
-          <select
-            value={itemsPerPage}
-            onChange={e => setItemsPerPage(Number(e.target.value))}
-            className="p-1 border rounded"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span>
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
+      <ClienteModal
+        isOpen={modalOpen}
+        toggle={toggleModal}
+        cliente={clienteSeleccionado}
+        onSuccess={obtenerClientes}
+      />
     </div>
   );
 }

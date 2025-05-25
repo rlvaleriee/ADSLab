@@ -1,112 +1,152 @@
-// src/components/Productos.tsx
-import { useState, useEffect } from 'react';
-import { Producto } from '../../hook/useProductos';
+import { useState, useEffect } from "react";
+import { fetchClient } from "../../services/fetchClient";
+import { Producto } from "../../interfaces/IProductos";
+import { Categoria } from "../../interfaces/ICategorias";
+import { Button } from "reactstrap";
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { DataTable } from "./DataTable";
+import { ProductoModal } from "./ProductoModal";
+import Swal from "sweetalert2";
 
-interface Productos {
-  id_productos: number;
-  id_categoria: number;
-  nombre_producto: string;
-  descripcion: string;
-  precio: number;
-  disponible: string;
-}
+export function Productos() {
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | undefined>(undefined);
 
-interface ProductosProps {
-  productos: Producto[];
-  loading: boolean;
-  error: string | null;
-}
+  const toggleModal = () => {
+    setModalOpen(!modalOpen);
+    if (modalOpen) setProductoSeleccionado(undefined);
+  };
 
-export default function Productos({ productos, loading, error }: ProductosProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const obtenerProductos = async () => {
+    try {
+      const data = await fetchClient<Producto[]>("/api/productos");
+      setProductos(data);
+    } catch (error) {
+      console.error("Error al obtener productos:", error);
+    }
+  };
 
-  const filtered = productos.filter(p =>
-    p.nombre_producto.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-    p.descripcion.toLowerCase().includes(searchTerm.trim().toLowerCase())
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const pageData = filtered.slice(startIdx, startIdx + itemsPerPage);
+  const obtenerCategorias = async () => {
+    try {
+      const data = await fetchClient<Categoria[]>("/api/categorias");
+      setCategorias(data);
+    } catch (error) {
+      console.error("Error al obtener categorías:", error);
+    }
+  };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+    obtenerProductos();
+    obtenerCategorias();
+  }, []);
 
-  if (loading) return <p className="p-6 text-center">Cargando productos...</p>;
-  if (error) return <p className="p-6 text-center text-red-500">Error: {error}</p>;
+  const handleNuevo = () => {
+    setProductoSeleccionado(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEditar = (producto: Producto) => {
+    setProductoSeleccionado(producto);
+    setModalOpen(true);
+  };
+
+  const handleEliminar = async (producto: Producto) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: `¿Deseas eliminar el producto "${producto.nombre_producto}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await fetchClient(`/api/productos/delete/${producto.id_productos}`, {
+          method: "DELETE",
+        });
+
+        setProductos((prev) =>
+          prev.filter((p) => p.id_productos !== producto.id_productos)
+        );
+
+        Swal.fire("Eliminado", "El producto fue eliminado correctamente", "success");
+      } catch (error: any) {
+        Swal.fire("Error", error.message || "No se pudo eliminar el producto", "error");
+      }
+    }
+  };
+
+  const getCategoriaNombre = (idCategoria: number) => {
+    const categoria = categorias.find((c) => c.id_categoria === idCategoria);
+    return categoria ? categoria.nombre_categoria : "Categoría no encontrada";
+  };
+
+  const renderDisponible = (disponible: string) => {
+    return disponible === "true" ? "Sí" : "No";
+  };
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Lista de Productos</h2>
+    <div>
+      <h2 className="mt-4">Lista de Productos</h2>
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre o descripción..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        className="mb-4 p-2 border rounded w-full"
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button color="primary" onClick={handleNuevo}>
+          Nuevo Producto
+        </Button>
+      </div>
+
+      <DataTable<Producto>
+        data={productos}
+        columns={[
+          {
+            key: "id_categoria",
+            label: "Categoría",
+            render: (item) => getCategoriaNombre(item.id_categoria),
+          },
+          { key: "nombre_producto", label: "Nombre Producto" },
+          { key: "descripcion", label: "Descripción" },
+          { key: "precio", label: "Precio" },
+          {
+            key: "disponible",
+            label: "Disponible",
+            render: (item) => renderDisponible(item.disponible),
+          },
+          {
+            key: "acciones",
+            label: "Acciones",
+            render: (producto: Producto) => (
+              <div className="d-flex justify-content-center gap-2">
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => handleEditar(producto)}
+                >
+                  <FaEdit />
+                </Button>
+                <Button
+                  color="danger"
+                  size="sm"
+                  onClick={() => handleEliminar(producto)}
+                >
+                  <FaTrashAlt />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        searchKeys={["nombre_producto", "descripcion"]}
       />
 
-      <table className="w-full border-collapse border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border p-2">ID Producto</th>
-            <th className="border p-2">Nombre</th>
-            <th className="border p-2">Descripción</th>
-            <th className="border p-2">Precio</th>
-            <th className="border p-2">Disponible</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageData.map(producto => (
-            <tr key={producto.id_producto}>
-              <td className="border p-2">{producto.id_producto}</td>
-              <td className="border p-2">{producto.nombre_producto}</td>
-              <td className="border p-2">{producto.descripcion}</td>
-              <td className="border p-2">{producto.precio}</td>
-              <td className="border p-2">{producto.disponible ? 'Sí' : 'No'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
-        <div>
-          <label className="mr-2">Items por página:</label>
-          <select
-            value={itemsPerPage}
-            onChange={e => setItemsPerPage(Number(e.target.value))}
-            className="p-1 border rounded"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span>
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
+      <ProductoModal
+        isOpen={modalOpen}
+        toggle={toggleModal}
+        producto={productoSeleccionado}
+        categorias={categorias}
+        onSuccess={obtenerProductos}
+      />
     </div>
   );
 }

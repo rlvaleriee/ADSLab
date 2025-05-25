@@ -1,106 +1,135 @@
-// src/components/Facturas.tsx
-import { useState, useEffect } from 'react';
-import { Factura } from '../../hook/useFacturas';
-interface FacturasProps {
-  facturas: Factura[];
-  loading: boolean;
-  error: string | null;
-}
+import { useState, useEffect } from "react";
+import { fetchClient } from "../../services/fetchClient";
+import { Factura } from "../../interfaces/IFacturas";
+import { Button } from "reactstrap";
+import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { DataTable } from "./DataTable";
+import { FacturaModal } from "./FacturaModal";
+import Swal from "sweetalert2";
+import { Pedido } from "../../interfaces/IPedidos";
 
-export default function Facturas({ facturas, loading, error }: FacturasProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+export function Facturas() {
+  const [facturas, setFacturas] = useState<Factura[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [facturaSeleccionada, setFacturaSeleccionada] = useState<Factura | undefined>(undefined);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
 
-  const filtered = facturas.filter(f =>
-    f.metodo_pago.toLowerCase().includes(searchTerm.trim().toLowerCase()) ||
-    f.id_factura.toString().includes(searchTerm.trim())
-  );
+  const toggleModal = () => {
+    setModalOpen(!modalOpen);
+    if (modalOpen) setFacturaSeleccionada(undefined);
+  };
+  const obtenerPedidos = async () => {
+  try {
+    const data = await fetchClient<Pedido[]>("/api/pedidos"); // Ajusta el endpoint si es distinto
+    setPedidos(data);
+  } catch (error) {
+    console.error("Error al obtener pedidos", error);
+  }
+};
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
-  const startIdx = (currentPage - 1) * itemsPerPage;
-  const pageData = filtered.slice(startIdx, startIdx + itemsPerPage);
+  const obtenerFacturas = async () => {
+    try {
+      const data = await fetchClient<Factura[]>("/api/facturas");
+      setFacturas(data);
+    } catch (error) {
+      console.error("Error al obtener facturas:", error);
+    }
+  };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
+    obtenerFacturas();
+    obtenerPedidos();
+  }, []);
 
-  if (loading) return <p className="p-6 text-center">Cargando facturas...</p>;
-  if (error) return <p className="p-6 text-center text-red-500">Error: {error}</p>;
+  const handleNuevo = () => {
+    setFacturaSeleccionada(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEditar = (factura: Factura) => {
+    setFacturaSeleccionada(factura);
+    setModalOpen(true);
+  };
+
+  const handleEliminar = async (factura: Factura) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: `¿Deseas eliminar la factura #${factura.id_factura}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await fetchClient(`/api/facturas/delete/${factura.id_factura}`, {
+          method: "DELETE",
+        });
+
+        setFacturas((prev) =>
+          prev.filter((f) => f.id_factura !== factura.id_factura)
+        );
+
+        Swal.fire("Eliminado", "La factura fue eliminada correctamente", "success");
+      } catch (error: any) {
+        Swal.fire("Error", error.message || "No se pudo eliminar la factura", "error");
+      }
+    }
+  };
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Lista de Facturas</h2>
+    <div>
+      <h2 className="mt-4">Lista de Facturas</h2>
 
-      <input
-        type="text"
-        placeholder="Buscar por método de pago o ID de factura..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        className="mb-4 p-2 border rounded w-full"
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <Button color="primary" onClick={handleNuevo}>
+          Nueva Factura
+        </Button>
+      </div>
+
+      <DataTable<Factura>
+        data={facturas}
+        columns={[
+          
+          { key: "id_pedido", label: "ID Pedido" },
+          { key: "fecha_emision", label: "Fecha de Emisión" },
+          { key: "subtotal", label: "Subtotal" },
+          { key: "impuestos", label: "Impuestos" },
+          { key: "total", label: "Total" },
+          { key: "metodo_pago", label: "Método de Pago" },
+          {
+            key: "acciones",
+            label: "Acciones",
+            render: (factura: Factura) => (
+              <div className="d-flex justify-content-center gap-2">
+                <Button
+                  color="primary"
+                  size="sm"
+                  onClick={() => handleEditar(factura)}
+                >
+                  <FaEdit />
+                </Button>
+                <Button
+                  color="danger"
+                  size="sm"
+                  onClick={() => handleEliminar(factura)}
+                >
+                  <FaTrashAlt />
+                </Button>
+              </div>
+            ),
+          },
+        ]}
+        searchKeys={["id_factura", "id_pedido", "metodo_pago"]}
       />
 
-      <table className="w-full border-collapse border">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border p-2">ID Factura</th>
-            <th className="border p-2">ID Pedido</th>
-            <th className="border p-2">Fecha Emisión</th>
-            <th className="border p-2">Subtotal</th>
-            <th className="border p-2">Impuestos</th>
-            <th className="border p-2">Total</th>
-            <th className="border p-2">Método de Pago</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageData.map(factura => (
-            <tr key={factura.id_factura}>
-              <td className="border p-2">{factura.id_factura}</td>
-              <td className="border p-2">{factura.id_pedido}</td>
-              <td className="border p-2">{factura.fecha_emision}</td>
-              <td className="border p-2">{factura.subtotal}</td>
-              <td className="border p-2">{factura.impuestos}</td>
-              <td className="border p-2">{factura.total}</td>
-              <td className="border p-2">{factura.metodo_pago}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
-        <div>
-          <label className="mr-2">Items por página:</label>
-          <select
-            value={itemsPerPage}
-            onChange={e => setItemsPerPage(Number(e.target.value))}
-            className="p-1 border rounded"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span>
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
+      <FacturaModal
+              isOpen={modalOpen}
+              toggle={toggleModal}
+              factura={facturaSeleccionada}
+              onSuccess={obtenerFacturas}
+              pedidos={pedidos}     />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useContext, JSX } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import Login from '../page/auth/Login';      // Asegúrate de la mayúscula si el archivo lo tiene
-import Dashboard from '../page/main/Dashboard';
+import AdminLayout from '../page/main/AdminLayout';
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
     const { user } = useContext(AuthContext);
@@ -17,7 +17,7 @@ export default function AppRoute() {
                 path="/"
                 element={
                     <PrivateRoute>
-                        <Dashboard />
+                        <AdminLayout />
                     </PrivateRoute>
                 }
             />

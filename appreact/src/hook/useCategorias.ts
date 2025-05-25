@@ -9,7 +9,7 @@ export function useCategorias() {
 
   useEffect(() => {
     setLoading(true);
-    fetchClient<any[]>('/api/categorias/', { method: 'GET' }) // Asegúrate que el endpoint sea correcto
+    fetchClient<any[]>('/api/categorias/', { method: 'GET' }) 
       .then(data => setCategorias(data))
       .catch(err => setError(err.message || 'Error al cargar categorías'))
       .finally(() => setLoading(false));
